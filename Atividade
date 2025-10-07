@@ -21,3 +21,200 @@ def sistema_emprestimo_livros():
 
 if __name__ == "__main__":
     sistema_emprestimo_livros()
+##############################################
+from datetime import datetime
+
+def calculadora_idade():
+    data_nascimento_str = input("Digite sua data de nascimento (dd/mm/aaaa): ")
+    try:
+        data_nascimento = datetime.strptime(data_nascimento_str, "%d/%m/%Y")
+    except ValueError:
+        print("Formato de data inválido. Use dd/mm/aaaa.")
+        return
+
+    ano_atual = datetime.now().year
+    idade = ano_atual - data_nascimento.year
+
+    print(f"Sua idade é: {idade} anos.")
+
+if __name__ == "__main__":
+    calculadora_idade()
+
+#############################################################################
+import streamlit as st
+import datetime
+from datetime import date, timedelta
+
+# Configuração da página
+st.set_page_config(
+    page_title="Sistema de Aluguel de Filmes e Jogos",
+    page_icon="🎬",
+    layout="wide"
+)
+
+# Lista de produtos disponíveis
+PRODUTOS = {
+    "Filmes": [
+        "Avatar: O Caminho da Água",
+        "Top Gun: Maverick",
+        "Vingadores: Ultimato",
+        "Homem-Aranha: Sem Volta para Casa",
+        "Duna"
+    ],
+    "Jogos": [
+        "The Last of Us Part II",
+        "God of War Ragnarök",
+        "Elden Ring",
+        "FIFA 24",
+        "Call of Duty: Modern Warfare III"
+    ]
+}
+
+def calcular_status_devolucao(data_devolucao):
+    """Calcula o status da devolução baseado na data atual"""
+    hoje = date.today()
+    diferenca = (data_devolucao - hoje).days
+   
+    if diferenca > 0:
+        return f"Faltam {diferenca} dias para a devolução", "info"
+    elif diferenca == 0:
+        return "A devolução é hoje!", "warning"
+    else:
+        return f"O prazo já passou há {abs(diferenca)} dias", "error"
+
+def main():
+    st.title("🎬 Sistema de Aluguel de Filmes e Jogos")
+    st.markdown("---")
+   
+    # Sidebar para seleção
+    st.sidebar.header("📋 Registrar Aluguel")
+   
+    # Seleção do tipo de produto
+    tipo_produto = st.sidebar.selectbox(
+        "Escolha o tipo de produto:",
+        ["Filmes", "Jogos"]
+    )
+   
+    # Seleção do produto específico
+    produto_selecionado = st.sidebar.selectbox(
+        f"Escolha um {tipo_produto.lower()[:-1]}:",
+        PRODUTOS[tipo_produto]
+    )
+   
+    # Seleção das datas
+    st.sidebar.subheader("📅 Datas")
+   
+    data_retirada = st.sidebar.date_input(
+        "Data de retirada:",
+        value=date.today(),
+        min_value=date.today() - timedelta(days=30),
+        max_value=date.today() + timedelta(days=30)
+    )
+   
+    data_devolucao = st.sidebar.date_input(
+        "Data de devolução:",
+        value=date.today() + timedelta(days=7),
+        min_value=data_retirada,
+        max_value=date.today() + timedelta(days=90)
+    )
+   
+    # Validação das datas
+    if data_devolucao < data_retirada:
+        st.sidebar.error("A data de devolução deve ser posterior à data de retirada!")
+        return
+   
+    # Botão para registrar aluguel
+    if st.sidebar.button("🎯 Registrar Aluguel", type="primary"):
+        # Armazenar dados na sessão
+        st.session_state.aluguel_registrado = {
+            "tipo": tipo_produto,
+            "produto": produto_selecionado,
+            "data_retirada": data_retirada,
+            "data_devolucao": data_devolucao
+        }
+   
+    # Área principal - Exibir informações do aluguel
+    if hasattr(st.session_state, 'aluguel_registrado') and st.session_state.aluguel_registrado:
+        aluguel = st.session_state.aluguel_registrado
+       
+        st.header("✅ Aluguel Registrado com Sucesso!")
+       
+        # Criar colunas para layout
+        col1, col2 = st.columns([2, 1])
+       
+        with col1:
+            # Informações do produto
+            st.subheader("📦 Informações do Produto")
+            st.write(f"**Tipo:** {aluguel['tipo']}")
+            st.write(f"**Produto:** {aluguel['produto']}")
+           
+            # Informações das datas
+            st.subheader("📅 Informações das Datas")
+            st.write(f"**Data de Retirada:** {aluguel['data_retirada'].strftime('%d/%m/%Y')}")
+            st.write(f"**Data de Devolução:** {aluguel['data_devolucao'].strftime('%d/%m/%Y')}")
+           
+            # Calcular período de aluguel
+            periodo = (aluguel['data_devolucao'] - aluguel['data_retirada']).days
+            st.write(f"**Período de Aluguel:** {periodo} dias")
+       
+        with col2:
+            # Status da devolução
+            st.subheader("⏰ Status da Devolução")
+            status_msg, status_type = calcular_status_devolucao(aluguel['data_devolucao'])
+           
+            if status_type == "info":
+                st.info(status_msg)
+            elif status_type == "warning":
+                st.warning(status_msg)
+            else:
+                st.error(status_msg)
+           
+            # Botão para limpar registro
+            if st.button("🗑️ Limpar Registro"):
+                del st.session_state.aluguel_registrado
+                st.rerun()
+       
+        # Linha separadora
+        st.markdown("---")
+       
+        # Informações adicionais
+        st.subheader("📊 Resumo do Aluguel")
+       
+        # Criar métricas
+        col1, col2, col3, col4 = st.columns(4)
+       
+        with col1:
+            st.metric("Produto", aluguel['produto'])
+       
+        with col2:
+            st.metric("Período", f"{periodo} dias")
+       
+        with col3:
+            dias_restantes = (aluguel['data_devolucao'] - date.today()).days
+            st.metric("Dias para Devolução", dias_restantes)
+       
+        with col4:
+            if dias_restantes >= 0:
+                st.metric("Status", "✅ No Prazo")
+            else:
+                st.metric("Status", "❌ Atrasado")
+   
+    else:
+        # Tela inicial
+        st.header("👋 Bem-vindo ao Sistema de Aluguel!")
+        st.write("Use o painel lateral para registrar um novo aluguel.")
+       
+        # Mostrar produtos disponíveis
+        st.subheader("🎬 Filmes Disponíveis")
+        for filme in PRODUTOS["Filmes"]:
+            st.write(f"• {filme}")
+       
+        st.subheader("🎮 Jogos Disponíveis")
+        for jogo in PRODUTOS["Jogos"]:
+            st.write(f"• {jogo}")
+       
+        st.markdown("---")
+        st.info("💡 **Dica:** Selecione um produto no painel lateral e defina as datas para começar!")
+
+if __name__ == "__main__":
+    main()
