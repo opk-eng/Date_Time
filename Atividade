@@ -1,0 +1,23 @@
+from datetime import datetime
+
+def sistema_emprestimo_livros():
+    data_devolucao_str = input("Digite a data de devolução do livro (dd/mm/aaaa): ")
+    try:
+        data_devolucao = datetime.strptime(data_devolucao_str, "%d/%m/%Y")
+    except ValueError:
+        print("Formato de data inválido. Use dd/mm/aaaa.")
+        return
+
+    data_atual = datetime.now()
+
+    diferenca = data_devolucao - data_atual
+
+    if diferenca.days > 0:
+        print(f"Você tem {diferenca.days} dias para devolver.")
+    elif diferenca.days < 0:
+        print(f"O livro está atrasado em {abs(diferenca.days)} dias!")
+    else:
+        print("O livro vence hoje!")
+
+if __name__ == "__main__":
+    sistema_emprestimo_livros()
